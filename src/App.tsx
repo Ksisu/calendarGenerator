@@ -1,12 +1,18 @@
-import React, {useMemo} from 'react';
+import React, {PropsWithRef, useCallback, useMemo, useRef, useState} from 'react';
 import * as _ from "lodash";
 import styled from 'styled-components'
 import {getNames} from "./namedays";
+import html2canvas from "html2canvas";
+import {exportAsImage} from "./exportAsImage";
 
+const a5_300_dpi_height = 1748;
+const a5_300_dpi_width = 2480;
+const scale = 2;
 
-const MonthWrapper = styled.div`
+const MonthWrapper = styled.div<PropsWithRef<any>>`
   padding: 20px;
-  height: 100vh;
+  height: ${a5_300_dpi_height/scale}px;
+  width: ${a5_300_dpi_width/scale}px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -74,6 +80,12 @@ const DayName = styled.div`
   font-size: smaller;
   color: gray;
   font-style: italic;
+`
+
+const ButtonRow = styled.div`
+  display: flex;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rebeccapurple;
 `
 
 function getDaysInMonth(year: number, month: number): number {
@@ -153,13 +165,26 @@ function Day({day}: { day: DayData }) {
 }
 
 function App() {
-  const year = 2023;
+  const [year, setYear] = useState(new Date().getFullYear() + 1);
   const data = useMemo(() => calculateYear(year), [year]);
+  const monthsRefs = useRef<any[]>([]);
+
+  const handleClick = useCallback((m: number) => {
+    if(!monthsRefs.current[m]) return;
+    exportAsImage(monthsRefs.current[m], `${year}_${m + 1}.jpg`, scale);
+  }, [year, monthsRefs])
 
   return (
     <>
+      <div>
+        <label>Év <input type={"number"} value={year} onChange={(e) => setYear(parseInt(e.target.value))}/></label>
+      </div>
+      <ButtonRow>
+        <div>Letöltés (JPG A5 300 dpi)</div>
+        {mLabel.map((ml, m) => (<button key={`b_${m}`} onClick={() => handleClick(m)}>{ml}</button>))}
+      </ButtonRow>
       {data.map((weeks, m) => (
-        <MonthWrapper key={`m_${m}`}>
+        <MonthWrapper key={`m_${m}`} ref={(el: any) => monthsRefs.current[m] = el}>
           <MonthHeader>
             <MonthLabel>{mLabel[m]}</MonthLabel>
             <YearLabel>{year}</YearLabel>
